@@ -47,7 +47,7 @@ def get_and_clean_data():
 
 
 def clean_data_wiki():
-    f = open("C:/Users/Bungkai/Documents/953481 IR/953481-midterm-project/assets/eng-simple_wikipedia_2021_100K-sentences.txt", "r", encoding='utf8')
+    f = open("assets/eng-simple_wikipedia_2021_100K-sentences.txt", "r", encoding='utf8')
     text = f.read()
     text = re.sub('[^A-za-z]', ' ', text.lower() )
     text = re.sub('\s+', ',', text)

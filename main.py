@@ -21,15 +21,13 @@ tfidf_vec, tfidf_X = pickle.load(open('models/tfidf.pkl', 'rb'))
 bm25 = pickle.load(open('models/bm25.pkl', 'rb'))
 
 
-#spell correction dataset
+#spell correction
 spell = SpellChecker(language='en')
 spell.word_frequency.load_text_file('assets/clean_wiki_100k.txt')
-#spell correction
 
 @app.route('/index')
 def home():
     return render_template('index.html')
-
 
 @app.route('/<page>')
 def hello(page):
@@ -63,22 +61,6 @@ def queryLyric():
             df_tf_idf['rank'] = df_tf_idf['tfidf'].rank(ascending=False)
             df_tf_idf = df_tf_idf.drop(columns='tfidf', axis=1)
             spell_corr = [spell.correction(w) for w in body['query'].split()]
-
-            # lyrics = []
-            # for s in range(10):
-            #     lyric_f = []
-            #     lyric_l = []
-            #     lyric = df_tf_idf['lyric'].iloc[s].split()
-            #
-            #     last = 5
-            #     for w in range(5):
-            #         lyric_f.append(lyric[:6])
-            #         lyric_l.append(lyric[len(lyric)-last])
-            #         last-=1
-            #
-            #     lyric_done = ' '.join(lyric_f) + '...' + ' '.join(lyric_l)
-            #     lyrics.append(lyric_done)
-            # df_tf_idf['lyric'] = lyrics
             return {'songs': df_tf_idf.to_dict('records'), 'candidate_query': ' '.join(spell_corr)}
         elif(body['score'] == 'bm25'):
             score = bm25.transform(body['query'])
