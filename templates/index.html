@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+        <title> KaiTube</title>
+    </head>
+    <body class="bg-gray-700">
+        <nav class="bg-white border-gray-200 px-2 sm:px-4 py-2.5 rounded dark:bg-gray-800">
+          <div class="container flex flex-wrap justify-between items-center mx-auto">
+          <a href="#" class="flex" onclick="location.reload()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="red" class="bi bi-play-btn-fill mr-2" viewBox="0 0 16 16">
+                  <path d="M0 12V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm6.79-6.907A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z"/>
+                </svg>
+              <span class="self-center text-lg font-semibold whitespace-nowrap text-white">KaiTube</span>
+          </a>
+          <div class="flex items-center md:order-2">
+              <button type="button" class="flex mr-3 text-sm bg-gray-800 rounded-full md:mr-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600" id="user-menu-button" aria-expanded="false" type="button" data-dropdown-toggle="dropdown">
+                <span class="sr-only">Open user menu</span>
+              </button>
+          </div>
+          </div>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 mx-5">
+            <div class="flex justify-center align-start mt-9 mx-4 gap-4">
+                <div class="mb-3 pt-0 ">
+                  <input id="lyricQuery" type="text" placeholder="Search part of lyric" class="px-3 py-3 placeholder-blueGray-300 text-blueGray-600 relative bg-white bg-white rounded text-sm border-0 shadow outline-none focus:outline-none focus:ring w-full"/>
+                </div>
+                <div class="mb-3 pt-0">
+                    <select id="scoreModel" class="px-3 py-3 placeholder-blueGray-300 text-blueGray-600 relative bg-white bg-white rounded text-sm border-0 shadow outline-none focus:outline-none focus:ring w-full">
+                        <option value="tf" selected>TF</option>
+                        <option value="tfidf">TF-IDF</option>
+                        <option value="bm25">BM25</option>
+                      </select>
+                </div>
+                <div class="mb-3 pt-0 ">
+                    <button class=" bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-3 px-3 border border-blue-700 rounded" onclick="queryLyric()">
+                      submit
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-center align-start mt-9 mx-4 gap-4">
+                <div class="mb-3 pt-0 ">
+                  <input id="songQuery" type="text" placeholder="Search song name" class="px-3 py-3 placeholder-blueGray-300 text-blueGray-600 relative bg-white bg-white rounded text-sm border-0 shadow outline-none focus:outline-none focus:ring w-full"/>
+                </div>
+                <div class="mb-3 pt-0 ">
+                    <button class=" bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-3 px-3 border border-blue-700 rounded" onclick="querySong()">
+                      submit
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-center align-start mt-9 mx-4 gap-4">
+                <div class="mb-3 pt-0 ">
+                  <input id="artistQuery" type="text" placeholder="Search artist name" class="px-3 py-3 placeholder-blueGray-300 text-blueGray-600 relative bg-white bg-white rounded text-sm border-0 shadow outline-none focus:outline-none focus:ring w-full"/>
+                </div>
+                <div class="mb-3 pt-0 ">
+                    <button class=" bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-3 px-3 border border-blue-700 rounded" onclick="queryArtist()">
+                      submit
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="flex text-xl text-white justify-center" id="suggest"></div>
+        <div class="flex bg-white justify-center p-5 mx-4 rounded" >
+
+            <div id="foo"></div>
+        </div>
+        <div class="flex justify-center my-5">
+            <button class=" bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-3 px-3 border border-blue-700 rounded" onclick="backPage()">
+              <
+            </button>
+            <span class=" bg-blue-500 text-white text-sm font-bold py-3 px-3 border border-blue-700 rounded" id="page" disabled>
+              1
+            </span>
+            <button class=" bg-blue-500 hover:bg-blue-700 text-white text-sm font-bold py-3 px-3 border border-blue-700 rounded" onclick="nextPage()">
+              >
+            </button>
+        </div>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <script>
+            const nextPage = () =>{
+                let page = document.getElementById('page').innerHTML
+                page = parseInt(page)+1
+                document.getElementById('page').innerHTML = page
+                getSongs(document.getElementById('page').innerHTML)
+            }
+
+            const backPage = () =>{
+                let page = document.getElementById('page').innerHTML
+                page = parseInt(page)-1
+                document.getElementById('page').innerHTML = page
+                getSongs(document.getElementById('page').innerHTML)
+            }
+
+            const queryLyric = () =>{
+                axios.post('http://localhost:5000/query-lyric',{
+                    query: document.getElementById('lyricQuery').value,
+                    score: document.getElementById('scoreModel').value
+                })
+                    .then(res => {
+                        const songs = res.data.songs;
+                        const candidate_query = res.data.candidate_query
+                        makeUl(songs, candidate_query)
+                    })
+                    .catch(error => console.error(error));
+            }
+
+            const querySong = () =>{
+                axios.post('http://localhost:5000/query-song',{
+                    song: document.getElementById('songQuery').value,
+                })
+                    .then(res => {
+                        const songs = res.data.artist;
+                        console.log(res)
+                        makeUlNoRank(songs)
+                    })
+                    .catch(error => console.error(error));
+            }
+
+
+            const queryArtist = () =>{
+                axios.post('http://localhost:5000/query-artist',{
+                    artist: document.getElementById('artistQuery').value,
+                })
+                    .then(res => {
+                        const artist = res.data.artist;
+                        console.log(res)
+                        makeUlNoRank(artist)
+                    })
+                    .catch(error => console.error(error));
+            }
+
+            const makeUl = (data, candidate_query) => {
+                const myNode = document.getElementById("foo");
+                const suggest = document.getElementById("suggest");
+                suggest.innerHTML = '';
+                myNode.innerHTML = '';
+                 var ul = document.createElement('ul');
+                    for(i=0;i<data.length;i++)
+                    {
+                        var li=document.createElement('li');
+                        li.innerHTML="<span class='text-red-500 text-3xl'>" + data[i].rank + " </span><span class='text-3xl'>" + data[i].artist + "</span><span class='text-2xl mx-5' >" + data[i].song + "</span><br/>" + data[i].lyric + "<p>---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------</p>";
+                        ul.appendChild(li);
+                    }
+                if (document.getElementById('lyricQuery').value != candidate_query){
+                    console.log(document.getElementById('lyricQuery').value)
+                    console.log(candidate_query)
+
+                    var p = document.createElement('p')
+                    p.innerHTML = '<span class="text-extrabold">Suggest query: </span>' +candidate_query
+                    document.getElementById('suggest').appendChild(p);
+                }
+
+                document.getElementById('foo').appendChild(ul);
+            }
+
+             const makeUlNoRank = (data) => {
+                const myNode = document.getElementById("foo");
+                myNode.innerHTML = '';
+                 var ul = document.createElement('ul');
+                    for(i=0;i<data.length;i++)
+                    {
+                        var li=document.createElement('li');
+                        li.innerHTML = "<span class='text-3xl'>" + data[i].artist + "</span><span class='text-2xl mx-5' >" + data[i].song + "</span><br/>" + data[i].lyric + "<p>---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------</p>";
+                        ul.appendChild(li);
+                    }
+                document.getElementById('foo').appendChild(ul);
+            }
+
+            const getSongs = (page) => {
+                axios.get('http://localhost:5000/'+parseInt(page))
+                    .then(res => {
+                        const songs = res.data.songs;
+                        makeUlNoRank(songs)
+                    })
+                    .catch(error => console.error(error));
+            };
+            getSongs(document.getElementById('page').innerHTML)
+        </script>
+    </body>
+</html>
