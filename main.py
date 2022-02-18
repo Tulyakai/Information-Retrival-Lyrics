@@ -20,10 +20,10 @@ tfidf_vec, tfidf_X = pickle.load(open('models/tfidf.pkl', 'rb'))
 #bm25
 bm25 = pickle.load(open('models/bm25.pkl', 'rb'))
 
-
-#spell correction
+#spell correction dataset
 spell = SpellChecker(language='en')
-spell.word_frequency.load_text_file('assets/clean_wiki_100k.txt')
+spell.word_frequency.load_text_file('assets/clean_wiki.txt')
+#spell correction
 
 @app.route('/index')
 def home():
@@ -61,6 +61,33 @@ def queryLyric():
             df_tf_idf['rank'] = df_tf_idf['tfidf'].rank(ascending=False)
             df_tf_idf = df_tf_idf.drop(columns='tfidf', axis=1)
             spell_corr = [spell.correction(w) for w in body['query'].split()]
+
+            #
+            # body_query_index = [w.strip() for w in body['query'].split()]
+            # ls = df_tf_idf['lyric'].apply(lambda s: [w.strip() for w in s.split()])
+            # w_idx = []
+            # for song in ls:
+            #     keep = []
+            #     for i, w in enumerate(song):
+            #         if w == body_query_index[0]:
+            #             keep.append(i)
+            #     w_idx.append(keep)
+            #
+            # save = []
+            # for i, idx in enumerate(w_idx):
+            #     keep = {}
+            #     for w in idx:
+            #         if body_query_index == ls.iloc[i][w:w+len(body_query_index)]:
+            #             keep[w] = (ls.iloc[i][w:w+len(body_query_index)])
+            #     save.append(keep)
+            #
+            # last = [list(w.keys()) for w in save]
+            #
+            # for i in range(10):
+            #     for w in last[i]:
+            #        df_tf_idf['lyric'].iloc[i] = ' '.join(ls.iloc[i][w-5: w+len(body_query_index)+5])
+
+
             return {'songs': df_tf_idf.to_dict('records'), 'candidate_query': ' '.join(spell_corr)}
         elif(body['score'] == 'bm25'):
             score = bm25.transform(body['query'])
@@ -72,15 +99,16 @@ def queryLyric():
         else:
             return {'error': body['score'] + ' scoring in not exist'}, 400
 
-
 @app.route('/query-artist', methods=['POST'])
 def queryArtist():
     body = request.get_json()
     if (body['artist'] is None):
         return {'error': 'Request body must contain query and score'}, 400
-    result = parsed_data[parsed_data['artist'] == body['artist']]
+    result = parsed_data[parsed_data['artist'] == body['artist'].lower()]
     result = result.sort_values('song')
-    return {'artist': result.to_dict('records')}
+    spell_corr = [spell.correction(w) for w in body['artist'].split()]
+
+    return {'artist': result.to_dict('records'), 'candidate_query': ' '.join(spell_corr)}
 
 @app.route('/query-song', methods=['POST'])
 def querySong():
@@ -88,11 +116,11 @@ def querySong():
     if (body['song'] is None):
         return {'error': 'Request body must contain query and score'}, 400
     result = parsed_data[parsed_data['song'].str.contains(body['song'].lower())]
-
-    result = result[result['song'].apply(lambda s: s.split()[0] == body['song'].lower().split()[0])]
-    result = result[result['song'].apply(lambda s: len((re.sub(r'[\(\[].*?[\)\]]', '', s)).split()) ==  len(body['song'].split()))]
-
-    return {'artist': result.to_dict('records')}
+    if(result.shape[0] != 0):
+        result = result[result['song'].apply(lambda s: s.split()[0] == body['song'].lower().split()[0])]
+        result = result[result['song'].apply(lambda s: len((re.sub(r'[\(\[].*?[\)\]]', '', s)).split()) ==  len(body['song'].split()))]
+    spell_corr = [spell.correction(w) for w in body['song'].split()]
+    return {'artist': result.to_dict('records'), 'candidate_query': ' '.join(spell_corr)}
 
 if __name__ == '__main__':
     app.run(debug=True)

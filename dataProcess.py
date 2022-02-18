@@ -1,9 +1,10 @@
+import fnmatch
+from zipfile import ZipFile
 import pandas as pd
 import string
 import re
 import pickle
 from nltk import word_tokenize, PorterStemmer
-
 
 def preProcess(s):
     ps = PorterStemmer()
@@ -46,19 +47,83 @@ def get_and_clean_data():
     return df
 
 
-def clean_data_wiki():
-    f = open("assets/eng-simple_wikipedia_2021_100K-sentences.txt", "r", encoding='utf8')
+def clean_data_wiki_100k():
+    f = open("C:/Users/Bungkai/Documents/953481 IR/953481-midterm-project/assets/eng-simple_wikipedia_2021_100K-sentences.txt", "r", encoding='utf8')
     text = f.read()
     text = re.sub('[^A-za-z]', ' ', text.lower() )
     text = re.sub('\s+', ',', text)
     text = text.split(',')
-    text = [w for w in text if len(w)>2]
-    text = list(set(text))
+    text = [w for w in text if len(w)>1]
     text = ' '.join(text)
-    save_text = open('assets/clean_wiki_100k.txt', 'w')
-    save_text.write(text)
+    # save_text = open('assets/clean_wiki_100k.txt', 'r')
+    # save_text.write(text)
     return text
+
+def clean_data_wiki_100k_2016():
+    f = open("assets/eng_wikipedia_2016_100K-sentences.txt", "r", encoding='utf8')
+    text = f.read()
+    text = re.sub('[^A-za-z]', ' ', text.lower() )
+    text = re.sub('\s+', ',', text)
+    text = text.split(',')
+    text = [w for w in text if len(w)>1]
+    text = ' '.join(text)
+    # save_text = open('assets/clean_wiki_100k.txt', 'r')
+    # save_text.write(text)
+    return text
+
+def clean_data_wiki_300k():
+    f = open("assets/eng-simple_wikipedia_2021_300K-sentences.txt", "r", encoding='utf8')
+    text = f.read()
+    text = re.sub('[^A-za-z]', ' ', text.lower() )
+    text = re.sub('\s+', ',', text)
+    text = text.split(',')
+    text = [w for w in text if len(w)>1]
+    text = ' '.join(text)
+    # save_text = open('assets/clean_wiki_300k.txt', 'w')
+    # save_text.write(text)
+    return text
+
+def clean_data_wiki_1M():
+    f = open("assets/eng_wikipedia_2016_1M-sentences.txt", "r", encoding='utf8')
+    text = f.read()
+    text = re.sub('[^A-za-z]', ' ', text.lower())
+    text = re.sub('\s+', ',', text)
+    text = text.split(',')
+    text = [w for w in text if len(w)>1]
+    text = ' '.join(text)
+    # save_text = open('assets/clean_wiki_300k.txt', 'w')
+    # save_text.write(text)
+    return text
+
+# def clean_iula():
+#     with ZipFile('assets/IULA_Spanish-English_Technical_Corpus_data.zip') as zipfiles:
+#         files = fnmatch.filter(zipfiles.namelist(), "EN/*/*plain.txt")
+#         raw_IULA = [zipfiles.open(file_name).read().decode('utf8') for file_name in files]
+#     text = ' '.join(raw_IULA)
+#     text = re.sub('[^A-za-z]', ' ', text.lower())
+#     text = re.sub('\s+', ',', text)
+#     text = text.split(',')
+#     text = [w for w in text if len(w) > 1]
+#     text = ' '.join(text)
+#     # save_text = open('assets/clean_wiki_300k.txt', 'w')
+#     # save_text.write(text)
+#     return text
+
+
+def group_wiki():
+    wiki_1 = clean_data_wiki_100k()
+    wiki_2 = clean_data_wiki_300k()
+    wiki_3 = clean_data_wiki_100k_2016()
+    wiki_4 = clean_data_wiki_1M()
+    # iula = clean_iula()
+    wiki_1 += ' ' + wiki_2
+    wiki_1 += ' ' + wiki_3
+    wiki_1 += ' ' + wiki_4
+    # wiki_1 += ' ' + iula
+    save_text = open('assets/clean_wiki.txt', 'w')
+    save_text.write(wiki_1)
+
 
 if __name__ == '__main__':
     get_and_clean_data()
-    clean_data_wiki()
+    group_wiki()
